@@ -1,26 +1,29 @@
-import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
+import { auth } from "../lib/auth";
 import { AppError } from "../middlewares/error-handler";
-import { config } from "../config";
 
-export interface JwtPayload {
-  sub: string;
-  email: string;
-}
+/**
+ * Better Auth session guard.
+ *
+ * Validates the session via Better Auth's `auth.api.getSession`, which reads
+ * the session cookie from the `headers` object. On success, the authenticated
+ * user and session are exposed as `ctx.user` and `ctx.session`.
+ *
+ * Throws 401 if no valid session is found.
+ */
+export const authGuard = new Elysia().derive(
+  async ({ headers }) => {
+    const session = await auth.api.getSession({
+      headers,
+    });
 
-export const authGuard = new Elysia()
-  .use(jwt({ name: "jwt", secret: config.jwtSecret }))
-  .derive(async ({ headers, jwt }) => {
-    const authHeader = headers["authorization"];
-    if (!authHeader?.startsWith("Bearer ")) {
-      throw new AppError(401, "UNAUTHORIZED", "Missing or invalid token");
+    if (!session) {
+      throw new AppError(401, "UNAUTHORIZED", "Missing or invalid session");
     }
 
-    const token = authHeader.slice(7);
-    const payload = (await jwt.verify(token)) as unknown as JwtPayload | null;
-    if (!payload) {
-      throw new AppError(401, "UNAUTHORIZED", "Invalid or expired token");
-    }
-
-    return { user: payload };
-  });
+    return {
+      user: session.user,
+      session: session.session,
+    };
+  },
+);
