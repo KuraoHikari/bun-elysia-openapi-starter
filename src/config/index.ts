@@ -5,5 +5,7 @@ const env = parseEnv();
 export const config = {
   port: env.PORT,
   databaseUrl: env.DATABASE_URL,
-  jwtSecret: env.JWT_SECRET,
+  betterAuthSecret: env.BETTER_AUTH_SECRET,
+  betterAuthUrl: env.BETTER_AUTH_URL,
+  corsOrigin: env.CORS_ORIGIN,
 } as const;

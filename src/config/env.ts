@@ -1,9 +1,16 @@
-const required = ["DATABASE_URL", "JWT_SECRET"] as const;
+const required = [
+  "DATABASE_URL",
+  "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_URL",
+  "CORS_ORIGIN",
+] as const;
 
 interface Env {
   PORT: number;
   DATABASE_URL: string;
-  JWT_SECRET: string;
+  BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL: string;
+  CORS_ORIGIN: string;
 }
 
 export function parseEnv(): Env {
@@ -16,6 +23,8 @@ export function parseEnv(): Env {
   return {
     PORT: Number(process.env.PORT) || 3000,
     DATABASE_URL: process.env.DATABASE_URL!,
-    JWT_SECRET: process.env.JWT_SECRET!,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET!,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL!,
+    CORS_ORIGIN: process.env.CORS_ORIGIN!,
   };
 }
