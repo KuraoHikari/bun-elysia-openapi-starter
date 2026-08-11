@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db } from "../../db/client";
-import { user } from "../../db/schema";
+import { user as userTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { AppError } from "../../middlewares/error-handler";
 import { authGuard } from "../../middlewares/auth-guard";
@@ -12,7 +12,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get(
     "/",
     async () => {
-      const result = await db.select().from(user);
+      const result = await db.select().from(userTable);
       return { success: true, data: result };
     },
     { detail: { summary: "List all users", tags: ["Users"] } },
@@ -20,36 +20,57 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get(
     "/:id",
     async ({ params }) => {
-      const [found] = await db.select().from(user).where(eq(user.id, params.id));
-      if (!found) throw new AppError(404, "NOT_FOUND", "User not found");
-      return { success: true, data: found };
+      const [row] = await db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.id, params.id));
+
+      if (!row) throw new AppError(404, "NOT_FOUND", "User not found");
+      return { success: true, data: row };
     },
-    { detail: { summary: "Get a user by ID", tags: ["Users"] } },
+    {
+      params: t.Object({ id: t.String() }),
+      detail: { summary: "Get a user by ID", tags: ["Users"] },
+    },
   )
   .patch(
     "/:id",
     async ({ params, body }) => {
       const data = validate(updateUserSchema, body);
       const updates: Record<string, unknown> = {};
-      if (data.email) updates.email = data.email;
-      if (data.name) updates.name = data.name;
-      // NOTE: password changes should go through Better Auth, not here.
+      if (body.name) updates.name = body.name;
+      if (body.email) updates.email = body.email;
 
       if (Object.keys(updates).length === 0) {
         throw new AppError(400, "BAD_REQUEST", "Nothing to update");
       }
 
-      await db.update(user).set(updates).where(eq(user.id, params.id));
-      const [updated] = await db.select().from(user).where(eq(user.id, params.id));
+      await db
+        .update(userTable)
+        .set(updates)
+        .where(eq(userTable.id, params.id));
+
+      const [updated] = await db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.id, params.id));
+
       if (!updated) throw new AppError(404, "NOT_FOUND", "User not found");
       return { success: true, data: updated };
     },
-    { detail: { summary: "Update a user", tags: ["Users"] } },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        name: t.Optional(t.String({ minLength: 1 })),
+        email: t.Optional(t.String({ format: "email" })),
+      }),
+      detail: { summary: "Update a user", tags: ["Users"] },
+    },
   )
   .delete(
     "/:id",
     async ({ params }) => {
-      await db.delete(user).where(eq(user.id, params.id));
+      await db.delete(userTable).where(eq(userTable.id, params.id));
       return { success: true, message: "User deleted" };
     },
     { detail: { summary: "Delete a user", tags: ["Users"] } },

@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
@@ -35,4 +36,42 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [openAPI()],
 });
+
+// Cache the OpenAPI schema so it's only generated once.
+let _schema: Awaited<ReturnType<typeof auth.api.generateOpenAPISchema>>;
+
+async function getSchema() {
+  return (_schema ??= await auth.api.generateOpenAPISchema());
+}
+
+/**
+ * Returns Better Auth's OpenAPI paths with a configurable prefix.
+ * All paths are tagged with "Auth" for the OpenAPI docs.
+ */
+export async function getAuthOpenAPIPaths(prefix = "/api/auth") {
+  const { paths } = await getSchema();
+  const prefixed: Record<string, Record<string, Record<string, unknown>>> = Object.create(null);
+  for (const path of Object.keys(paths)) {
+    const key = prefix + path;
+    const entry = paths[path];
+    if (!entry) continue;
+    prefixed[key] = entry as Record<string, Record<string, unknown>>;
+    for (const method of Object.keys(entry)) {
+      const operation = (prefixed[key] as Record<string, Record<string, unknown>>)[method] as Record<string, unknown>;
+      if (operation) {
+        operation.tags = ["Auth"];
+      }
+    }
+  }
+  return prefixed;
+}
+
+/**
+ * Returns Better Auth's OpenAPI components (schemas, security schemes).
+ */
+export async function getAuthOpenAPIComponents() {
+  const { components } = await getSchema();
+  return components;
+}

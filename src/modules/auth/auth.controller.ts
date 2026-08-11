@@ -6,5 +6,5 @@ export const authController = new Elysia({ prefix: "/api/auth" }).all(
   async ({ request }) => {
     return auth.handler(request);
   },
-  { detail: { summary: "Better Auth endpoints", tags: ["Auth"] } },
+  { detail: { summary: "Better Auth", tags: ["Auth"] } },
 );

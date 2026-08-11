@@ -7,5 +7,4 @@ export const config = {
   databaseUrl: env.DATABASE_URL,
   betterAuthSecret: env.BETTER_AUTH_SECRET,
   betterAuthUrl: env.BETTER_AUTH_URL,
-  corsOrigin: env.CORS_ORIGIN,
 } as const;
